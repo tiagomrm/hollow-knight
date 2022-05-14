@@ -12,22 +12,10 @@ export default {
   data() {
     return {
       keys: {
-        W: {
-          pressed: 0,
-          angleTo: 0
-        },
-        A: {
-          pressed: 0,
-          angleTo: Math.PI/2
-        },
-        S: {
-          pressed: 0,
-          angleTo: Math.PI
-        },
-        D: {
-          pressed: 0,
-          angleTo: 3 * Math.PI/2
-        },
+        W: 0,
+        A: 0,
+        S: 0,
+        D: 0
       }
     };
   },
@@ -111,38 +99,26 @@ export default {
 
     animate() {
 
+      // if knight is loaded
       if (this.knight !== undefined) {
-        const vector = new THREE.Vector3( 0, 0, - 1 );
+        // if any key is being pressed
+        if (Object.values(this.keys).some(elem => elem)) {
 
-        vector.applyQuaternion( this.camera.quaternion );
-        vector.y = 0;
-        vector.normalize();
+          // calculate the direction of the knight in relation to the cam
+          let camDirVector = new THREE.Vector3(
+              this.keys.D + this.keys.A * - 1,
+              0,
+              this.keys.S + this.keys.W * - 1
+          ).applyQuaternion(this.camera.quaternion);
 
-        let angle = 0;
-        let numKeysPressed = 0;
+          camDirVector.y = 0;
+          camDirVector.normalize();
 
+          camDirVector.add(this.knight.position);
 
-        const axis = new THREE.Vector3( 0, 1, 0 );
+          this.knight.lookAt(camDirVector)
 
-        const dirVector = vector.clone();
-
-
-
-        // console.log(this.knight.quaternion.angleTo(this.camera.quaternion) * (180.0 / Math.PI))
-
-        for (const [, value] of Object.entries(this.keys)) {
-          if (!value.pressed)
-            continue
-
-          angle += value.angleTo;
-          numKeysPressed++;
-        }
-
-        if (numKeysPressed > 0) {
-          angle = (angle + this.keys.D.pressed * this.keys.W.pressed * 2 * Math.PI) / numKeysPressed;
-
-          this.knight.rotation.y = angle + Math.PI;
-
+          // move in that direction
           this.knight.translateZ(0.6);
         }
 
@@ -181,32 +157,32 @@ export default {
     onDocumentKeyDown(event) {
       switch (event.keyCode) {
         case 68: //d
-          this.keys.D.pressed = 1;
+          this.keys.D = 1;
           break;
         case 83: //s
-          this.keys.S.pressed = 1;
+          this.keys.S = 1;
           break;
         case 65: //a
-          this.keys.A.pressed = 1;
+          this.keys.A = 1;
           break;
         case 87: //w
-          this.keys.W.pressed = 1;
+          this.keys.W = 1;
           break;
       }
     },
     onDocumentKeyUp(event) {
       switch (event.keyCode) {
         case 68: //d
-          this.keys.D.pressed = 0;
+          this.keys.D = 0;
           break;
         case 83: //s
-          this.keys.S.pressed = 0;
+          this.keys.S = 0;
           break;
         case 65: //a
-          this.keys.A.pressed = 0;
+          this.keys.A = 0;
           break;
         case 87: //w
-          this.keys.W.pressed = 0;
+          this.keys.W = 0;
           break;
       }
     }
