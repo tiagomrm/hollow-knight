@@ -4,8 +4,8 @@
 
 <script>
 import * as THREE from 'three'
-import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import * as KNIGHT from '../../assets/js/knight.js';
 
 export default {
   name: 'Canvas',
@@ -69,7 +69,7 @@ export default {
       const helper1 = new THREE.HemisphereLightHelper(hemiLight, 10);
 
 
-      for (let i = 0; i<= 50; i++) {
+      for (let i = 0; i<= 70; i++) {
         this.createRandomFirefly();
       }
 
@@ -101,8 +101,46 @@ export default {
       pillar.position.z = 60
       this.scene.add(pillar);
 
-      this.loadModel(new GLTFLoader(), '/models/knight.gltf');
 
+      this.scene.add(KNIGHT.knight)
+
+      const points = [];
+
+      for (let i = 0; i < 6; i++) {
+        points.push(new THREE.Vector3( - 60 + 0.015 * Math.exp(i), i * 4.2, 60 + 0.015 * Math.exp(i) ))
+      }
+
+      const closedSpline = new THREE.CatmullRomCurve3( points);
+
+      closedSpline.curveType = 'catmullrom';
+      closedSpline.closed = false;
+
+      const extrudeSettings1 = {
+        steps: 10,
+        bevelEnabled: false,
+        extrudePath: closedSpline
+      };
+
+
+      const pts1 = [], count = 3;
+
+      for ( let i = 0; i < count; i ++ ) {
+        const l = 0.5;
+        const a = 2 * i / count * Math.PI;
+        pts1.push( new THREE.Vector2( Math.cos( a ) * l, Math.sin( a ) * l ) );
+
+      }
+
+      const shape1 = new THREE.Shape( pts1 );
+
+      const geometry1 = new THREE.ExtrudeGeometry( shape1, extrudeSettings1 );
+
+      const material1 = new THREE.MeshToonMaterial( { color: 0x233f40, wireframe: false } );
+
+      const mesh1 = new THREE.Mesh( geometry1, material1 );
+
+
+      this.scene.add( mesh1 );
 
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
@@ -123,9 +161,9 @@ export default {
       const funcX = Math.floor(Math.random())
       const funcY = Math.floor(Math.random())
       const funcZ = Math.floor(Math.random())
-      const offsetX = Math.random() * 1000 - 500
+      const offsetX = Math.random() * 700 - 350
       const offsetY = Math.random() * 30 + 45
-      const offsetZ = Math.random() * 1000 - 500
+      const offsetZ = Math.random() * 700 - 350
 
       this.fireflies.push({
         object: particle,
@@ -175,6 +213,7 @@ export default {
 
     animate() {
 
+      this.renderAnimation();
 
       const time = Date.now() * 0.0005;
 
@@ -185,33 +224,20 @@ export default {
       }
 
 
-      // if knight is loaded
-      if (this.knight !== undefined) {
+
+      if (KNIGHT.hasLoaded()) {
         // if any key is being pressed
         if (Object.values(this.keys).some(isPressed => isPressed)) {
 
-          // calculate the direction of the knight in relation to the cam
-          let camDirVector = new THREE.Vector3(
+          KNIGHT.moveHorizontally(
               this.keys.D + this.keys.A * - 1,
-              0,
-              this.keys.S + this.keys.W * - 1
-          ).applyQuaternion(this.camera.quaternion);
-
-          camDirVector.y = 0;
-          camDirVector.normalize();
-
-          camDirVector.add(this.knight.position);
-
-          this.knight.lookAt(camDirVector)
-
-          // move in that direction
-          this.knight.translateZ(0.6);
+              this.keys.S + this.keys.W * - 1,
+              this.camera
+          );
         }
 
 
       }
-
-      this.renderAnimation();
     },
 
     renderAnimation() {
@@ -225,25 +251,6 @@ export default {
       this.camera.updateProjectionMatrix();
 
       this.renderer.setSize(window.innerWidth, window.innerHeight);
-    },
-
-    loadModel(loader, modelPath ) {
-      let vm = this;
-      loader.load(modelPath, function (gltf) {
-        gltf.scene.traverse(function (node) {
-          if (node.type === 'Mesh') {
-            node.castShadow = true;
-            node.receiveShadow = true;
-          }
-        });
-
-        vm.knight = gltf.scene;
-        vm.scene.add(vm.knight);
-      }, undefined, function (error) {
-
-        console.error(error);
-
-      });
     },
 
     onDocumentKeyDown(event) {
