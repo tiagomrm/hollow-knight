@@ -10,80 +10,181 @@ import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 export default {
   name: 'Canvas',
   data() {
-    return {};
+    return {
+      keys: {
+        W: 0,
+        A: 0,
+        S: 0,
+        D: 0
+      }
+    };
   },
-  mounted() {
+
+  async mounted() {
+    // 1. add event listeners
+    // 2. initialize scene and geometries
+    // 3. animate
+    window.addEventListener('resize', this.resizeToWindowSize, false);
+    document.addEventListener('keydown', this.onDocumentKeyDown, false);
+    document.addEventListener('keyup', this.onDocumentKeyUp, false);
     this.init();
-    window.addEventListener("resize", this.resizeToWindowSize, false);
     this.animate();
   },
+
   beforeUnmount() {
+    // remove event listeners
     window.removeEventListener('resize', this.resizeToWindowSize, false)
+    document.removeEventListener('keydown', this.onDocumentKeyDown, false);
+    document.removeEventListener('keyup', this.onDocumentKeyUp, false);
   },
+
   methods: {
     init() {
       this.scene = new THREE.Scene();
-      this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 10, 2000 );
+
+      this.scene.background = new THREE.Color().setHex(0x1a273b);
+      this.scene.fog = new THREE.Fog(this.scene.background, 800, 1000);
+
+      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 30, 2000);
 
 
       this.renderer = new THREE.WebGLRenderer();
+      this.renderer.shadowMap.enabled = true;
       this.resizeToWindowSize();
 
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.maxDistance = 1600;
+      this.controls.maxDistance = 500;
+      this.controls.maxPolarAngle = Math.PI / 2;
 
-      this.camera.position.set( 0, 300, 700 );
-      this.camera.lookAt( 0, 0, 0 );
+
+      this.camera.position.set(0, 300, 700);
+      this.camera.lookAt(0, 0, 0);
 
       this.controls.update();
 
 
-      let hlight = new THREE.DirectionalLight(0x404040,10);
-      hlight.castShadow = true;
+      let hemiLight = new THREE.HemisphereLight(0xa1f2db, 0x3f7675, 0.9);
+      hemiLight.position.set(0, 80, 0)
+      const helper1 = new THREE.HemisphereLightHelper(hemiLight, 10);
 
-      this.scene.add(hlight);
 
-      let directionalLight = new THREE.DirectionalLight(0xffffff,1);
-      directionalLight.position.set(0,200,200);
-      directionalLight.castShadow = true;
-      this.scene.add(directionalLight);
+      this.scene.add(hemiLight);
+      this.scene.add(helper1);
 
-      const helper = new THREE.DirectionalLightHelper( directionalLight, 10 );
+      let spotLight = new THREE.SpotLight(0xffffff, 0.9, 125, 0.5, 1,1);
+      spotLight.position.set(0, 100, 50);
+      spotLight.castShadow = true;
+      this.scene.add(spotLight);
+
+      const helper = new THREE.SpotLightHelper(spotLight, 10);
       this.scene.add(helper)
 
-      const geometry1 = new THREE.CircleGeometry( 400, 70 );
-      const material1 = new THREE.MeshStandardMaterial( { color: 0xffff00 } );
-      const plane = new THREE.Mesh( geometry1, material1 );
-      plane.rotation.x = - Math.PI / 2;
-      plane.receiveShadow = true;
-      this.scene.add( plane );
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+        color: 0x999999
+      }));
+      mesh.rotation.x = - Math.PI / 2;
+      mesh.receiveShadow = true;
+      mesh.material.side = THREE.DoubleSide;
 
-      this.loadModel(this.scene, new GLTFLoader(), '/models/knight.gltf')
+      this.scene.add(mesh);
+
+
+      this.loadModel(new GLTFLoader(), '/models/knight.gltf');
+
 
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
+
     },
+
     animate() {
-      requestAnimationFrame( this.animate );
-      this.renderer.render( this.scene, this.camera );
+
+      // if knight is loaded
+      if (this.knight !== undefined) {
+        // if any key is being pressed
+        if (Object.values(this.keys).some(elem => elem)) {
+
+          // calculate the direction of the knight in relation to the cam
+          let camDirVector = new THREE.Vector3(
+              this.keys.D + this.keys.A * - 1,
+              0,
+              this.keys.S + this.keys.W * - 1
+          ).applyQuaternion(this.camera.quaternion);
+
+          camDirVector.y = 0;
+          camDirVector.normalize();
+
+          camDirVector.add(this.knight.position);
+
+          this.knight.lookAt(camDirVector)
+
+          // move in that direction
+          this.knight.translateZ(0.6);
+        }
+
+
+      }
+
+      this.renderer.render(this.scene, this.camera);
+
+      requestAnimationFrame(this.animate);
     },
+
     resizeToWindowSize() {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
 
-      this.renderer.setSize( window.innerWidth, window.innerHeight );
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
     },
 
-    loadModel(scene, loader, modelPath) {
-      loader.load(modelPath, function ( gltf ) {
+    loadModel(loader, modelPath ) {
+      let vm = this;
+      loader.load(modelPath, function (gltf) {
+        gltf.scene.traverse(function (node) {
+          if (node.type === 'Mesh') node.castShadow = true;
+        });
 
-        scene.add( gltf.scene );
+        vm.knight = gltf.scene;
+        vm.scene.add(vm.knight)
+        console.log(vm.knight)
+      }, undefined, function (error) {
 
-      }, undefined, function ( error ) {
-
-        console.error( error );
+        console.error(error);
 
       });
+    },
+
+    onDocumentKeyDown(event) {
+      switch (event.keyCode) {
+        case 68: //d
+          this.keys.D = 1;
+          break;
+        case 83: //s
+          this.keys.S = 1;
+          break;
+        case 65: //a
+          this.keys.A = 1;
+          break;
+        case 87: //w
+          this.keys.W = 1;
+          break;
+      }
+    },
+    onDocumentKeyUp(event) {
+      switch (event.keyCode) {
+        case 68: //d
+          this.keys.D = 0;
+          break;
+        case 83: //s
+          this.keys.S = 0;
+          break;
+        case 65: //a
+          this.keys.A = 0;
+          break;
+        case 87: //w
+          this.keys.W = 0;
+          break;
+      }
     }
   }
 }
