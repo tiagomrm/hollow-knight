@@ -73,7 +73,7 @@ export default {
       const helper1 = new THREE.HemisphereLightHelper(hemiLight, 10);
 
 
-      for (let i = 0; i<= 70; i++) {
+      for (let i = 0; i<= 50; i++) {
         this.createRandomFirefly();
       }
 
@@ -109,15 +109,15 @@ export default {
       this.scene.add(KNIGHT.knight)
 
       let vm = this;
-      for (let i = 0; i <= 3; i++) {
-        (new GLTFLoader()).load('/models/ambient/leafyblade.gltf', function (gltf) {
+      for (let i = 0; i <= 7; i++) {
+        (new GLTFLoader()).load('/models/ambient/leafyblade.glb', function (gltf) {
           const obj = {
             scene: gltf.scene,
             animations: gltf.animations
           };
           obj.animations = gltf.animations;
 
-          obj.scene.scale.set(2.5, 2.5, 2.5)
+          // obj.scene.scale.set(2.5, 2.5, 2.5)
           obj.scene.position.x = i * 10;
           obj.scene.rotation.y = Math.PI + Math.random()
 
@@ -153,9 +153,9 @@ export default {
       const funcX = Math.floor(Math.random())
       const funcY = Math.floor(Math.random())
       const funcZ = Math.floor(Math.random())
-      const offsetX = Math.random() * 700 - 350
+      const offsetX = Math.random() * 500 - 250
       const offsetY = Math.random() * 30 + 45
-      const offsetZ = Math.random() * 700 - 350
+      const offsetZ = Math.random() * 500 - 250
 
       this.fireflies.push({
         object: particle,

@@ -32,7 +32,7 @@ function getKnight() {
     (new GLTFLoader()).load('/models/knight.gltf', function (gltf) {
         gltf.scene.traverse(function (node) {
             node.frustumCulled = false;
-            if (node.type === 'SkinnedMesh') {
+            if (node.isMesh) {
                 node.castShadow = true;
                 node.receiveShadow = true;
                 let color = node.material.color;
