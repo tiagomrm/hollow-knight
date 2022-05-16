@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import * as KNIGHT from '../../assets/js/knight.js';
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 
 export default {
   name: 'Canvas',
@@ -17,7 +18,8 @@ export default {
         S: 0,
         D: 0
       },
-      fireflies: []
+      fireflies: [],
+      animationMixers: []
     };
   },
 
@@ -42,14 +44,16 @@ export default {
   methods: {
     init() {
       this.scene = new THREE.Scene();
+      this.clock = new THREE.Clock();
 
       this.scene.background = new THREE.Color().setHex(0x1a273b);
       this.scene.fog = new THREE.Fog(this.scene.background, 400, 1000);
 
-      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 30, 2000);
+      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 2000);
 
 
-      this.renderer = new THREE.WebGLRenderer();
+      this.renderer = new THREE.WebGLRenderer({antialias: false});
+      this.renderer.setPixelRatio( window.devicePixelRatio );
       this.renderer.shadowMap.enabled = true;
       this.resizeToWindowSize();
 
@@ -104,44 +108,32 @@ export default {
 
       this.scene.add(KNIGHT.knight)
 
-      const points = [];
+      let vm = this;
+      for (let i = 0; i <= 3; i++) {
+        (new GLTFLoader()).load('/models/ambient/leafyblade.gltf', function (gltf) {
+          const obj = {
+            scene: gltf.scene,
+            animations: gltf.animations
+          };
+          obj.animations = gltf.animations;
 
-      for (let i = 0; i < 6; i++) {
-        points.push(new THREE.Vector3( - 60 + 0.015 * Math.exp(i), i * 4.2, 60 + 0.015 * Math.exp(i) ))
+          obj.scene.scale.set(2.5, 2.5, 2.5)
+          obj.scene.position.x = i * 10;
+          obj.scene.rotation.y = Math.PI + Math.random()
+
+          let mixer = new THREE.AnimationMixer(obj.scene);
+
+          obj.animations.forEach(animation => {
+            mixer.clipAction(animation).play();
+          })
+
+          vm.animationMixers.push(mixer);
+
+          vm.scene.add(gltf.scene);
+        }, undefined, function (error) {
+          console.error(error);
+        });
       }
-
-      const closedSpline = new THREE.CatmullRomCurve3( points);
-
-      closedSpline.curveType = 'catmullrom';
-      closedSpline.closed = false;
-
-      const extrudeSettings1 = {
-        steps: 10,
-        bevelEnabled: false,
-        extrudePath: closedSpline
-      };
-
-
-      const pts1 = [], count = 3;
-
-      for ( let i = 0; i < count; i ++ ) {
-        const l = 0.5;
-        const a = 2 * i / count * Math.PI;
-        pts1.push( new THREE.Vector2( Math.cos( a ) * l, Math.sin( a ) * l ) );
-
-      }
-
-      const shape1 = new THREE.Shape( pts1 );
-
-      const geometry1 = new THREE.ExtrudeGeometry( shape1, extrudeSettings1 );
-
-      const material1 = new THREE.MeshToonMaterial( { color: 0x233f40, wireframe: false } );
-
-      const mesh1 = new THREE.Mesh( geometry1, material1 );
-
-
-      this.scene.add( mesh1 );
-
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
     },
@@ -214,6 +206,11 @@ export default {
     animate() {
 
       this.renderAnimation();
+      const delta = this.clock.getDelta();
+
+      this.animationMixers.forEach(mixer => {
+        if (mixer) mixer.update(delta)
+      });
 
       const time = Date.now() * 0.0005;
 
@@ -222,8 +219,6 @@ export default {
         firefly.object.position.y = firefly.movement.y(time);
         firefly.object.position.z = firefly.movement.z(time);
       }
-
-
 
       if (KNIGHT.hasLoaded()) {
         // if any key is being pressed
