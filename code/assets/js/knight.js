@@ -29,7 +29,7 @@ export function moveHorizontally(x, z, camera) {
 }
 
 function getKnight() {
-    (new GLTFLoader()).load('/models/knight.gltf', function (gltf) {
+    (new GLTFLoader()).load('/models/knight.glb', function (gltf) {
         gltf.scene.traverse(function (node) {
             node.frustumCulled = false;
             if (node.isMesh) {
