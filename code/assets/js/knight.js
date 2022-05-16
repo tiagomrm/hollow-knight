@@ -29,11 +29,14 @@ export function moveHorizontally(x, z, camera) {
 }
 
 function getKnight() {
-    (new GLTFLoader()).load('/models/knight.gltf', function (gltf) {
+    (new GLTFLoader()).load('/models/knight.glb', function (gltf) {
         gltf.scene.traverse(function (node) {
-            if (node.type === 'Mesh') {
+            node.frustumCulled = false;
+            if (node.isMesh) {
                 node.castShadow = true;
                 node.receiveShadow = true;
+                let color = node.material.color;
+                node.material = new THREE.MeshToonMaterial({color: color});
             }
         });
 
