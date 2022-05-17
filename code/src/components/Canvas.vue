@@ -44,59 +44,61 @@ export default {
 
   methods: {
     init() {
+      // initial configuration
       this.scene = new THREE.Scene();
       this.clock = new THREE.Clock();
 
-      this.scene.background = new THREE.Color().setHex(0x1a273b);
-      this.scene.fog = new THREE.Fog(this.scene.background, 400, 1000);
-
-      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 2000);
-
-
+      // CAMERA
+      this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 700);
+      // RENDERER
       this.renderer = new THREE.WebGLRenderer({antialias: false});
       this.renderer.setPixelRatio( window.devicePixelRatio );
       this.renderer.shadowMap.enabled = true;
       this.resizeToWindowSize();
 
+      // USER CONTROLS
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.maxDistance = 500;
+      this.controls.maxDistance = 350;
       this.controls.maxPolarAngle = Math.PI / 2;
 
+      // PERFORMANCE STATS
+      this.stats = new Stats();
+      document.body.appendChild( this.stats.dom );
 
-      this.camera.position.set(0, 300, 700);
+      this.scene.background = new THREE.Color().setHex(0x1a273b);
+      this.scene.fog = new THREE.Fog(this.scene.background, 400, 700);
+
+
+      this.camera.position.set(-30, 30, 250);
       this.camera.lookAt(0, 0, 0);
 
       this.controls.update();
 
 
-      let hemiLight = new THREE.HemisphereLight(0xa1f2db, 0x3f7675, 0.9);
+      let hemiLight = new THREE.HemisphereLight(0xa1f2db, 0x3f7675, 0.4);
       hemiLight.position.set(0, 80, 0)
-      const helper1 = new THREE.HemisphereLightHelper(hemiLight, 10);
+
+      const pointBlueLight = new THREE.PointLight( 0x3fa6c1, 2, 200, 4 );
+      pointBlueLight.position.set(0, 50, 0)
+      this.scene.add( pointBlueLight );
 
 
-      for (let i = 0; i<= 50; i++) {
+      for (let i = 0; i<= 30; i++) {
         this.createRandomFirefly();
       }
 
       this.scene.add(hemiLight);
-      this.scene.add(helper1);
 
-      let spotLight = new THREE.SpotLight(0xffffff, 0.9, 125, 0.5, 1,1);
-      spotLight.position.set(0, 100, 50);
+      let spotLight = new THREE.SpotLight(0xffffff, 2, 220, 0.5, 1,1);
+      spotLight.position.set(0, 200, 50);
       spotLight.castShadow = true;
       this.scene.add(spotLight);
 
-      const helper = new THREE.SpotLightHelper(spotLight, 10);
-      this.scene.add(helper)
-
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshPhongMaterial({
-        color: 0x999999
-      }));
-      mesh.rotation.x = - Math.PI / 2;
-      mesh.receiveShadow = true;
-      mesh.material.side = THREE.DoubleSide;
-
-      this.scene.add(mesh);
+      const geometry = new THREE.CircleGeometry( 350, 16 );
+      const material = new THREE.MeshToonMaterial( { color: 0x999999 } );
+      const circle = new THREE.Mesh( geometry, material );
+      circle.rotation.x = - Math.PI/2;
+      this.scene.add( circle );
 
 
       const pillar = new THREE.Object3D();
@@ -106,38 +108,33 @@ export default {
       pillar.position.z = 60
       this.scene.add(pillar);
 
+      const clone = pillar.clone();
+      clone.position.x = -70;
+      clone.position.z = 0;
+      this.scene.add(clone);
+
+
+      KNIGHT.knight.position.z = 20;
 
       this.scene.add(KNIGHT.knight)
 
       let vm = this;
-      for (let i = 0; i <= 7; i++) {
-        (new GLTFLoader()).load('/models/ambient/leafyblade.glb', function (gltf) {
-          const obj = {
-            scene: gltf.scene,
-            animations: gltf.animations
-          };
-          obj.animations = gltf.animations
 
 
-          // obj.scene.scale.set(2.5, 2.5, 2.5)
-          obj.scene.position.x = i * 10;
-          obj.scene.rotation.y = Math.PI + Math.random()
 
-          let mixer = new THREE.AnimationMixer(obj.scene);
+      const leafyPositions = [
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: -100, y:0, z:0}},
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: -50,  y:0, z:0}},
+        {scale: {x:1.3, y:1.5, z:1.3},  rotation: - Math.PI/6,  position: {x: -40,  y:0, z:-10}},
+        {scale: {x:1, y:1.2, z:1},      rotation: Math.PI,      position: {x: -30,  y:0, z:-20}},
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: - Math.PI/6,  position: {x: 70,   y:0, z:0}},
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: 105,  y:0, z:20}},
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: 125, y:0, z:10}},
+        {scale: {x:1, y:1.2, z:1},      rotation: Math.PI,      position: {x: 145,  y:0, z:0}},
+      ];
 
-          obj.animations.forEach(animation => {
-            mixer.clipAction(animation).play();
-          })
-
-          vm.animationMixers.push(mixer);
-
-          vm.scene.add(gltf.scene);
-        }, undefined, function (error) {
-          console.error(error);
-        });
-      }
-
-
+      for (const leafyblade of leafyPositions)
+        this.addLeafyBlade(leafyblade.position, leafyblade.rotation, leafyblade.scale);
 
       (new GLTFLoader()).load('/models/ambient/bench.glb', function (gltf) {
         gltf.scene.traverse(function (node) {
@@ -149,15 +146,10 @@ export default {
           }
         });
 
-        gltf.scene.position.x = -30;
-
         vm.scene.add(gltf.scene)
       }, undefined, function (error) {
         console.error(error);
       });
-
-      this.stats = new Stats();
-      document.body.appendChild( this.stats.dom );
 
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
@@ -226,6 +218,29 @@ export default {
       object3D.add( torus );
       object3D.add( cylinder );
       object3D.add( sphere );
+    },
+
+    addLeafyBlade(position, rotation, scale) {
+      const vm = this;
+      (new GLTFLoader()).load('/models/ambient/leafyblade.glb', function (gltf) {
+        const obj = {
+          scene: gltf.scene,
+          animations: gltf.animations
+        };
+
+        obj.scene.scale.set(scale.x, scale.y, scale.z);
+        obj.scene.position.set(position.x, position.y, position.z);
+        obj.scene.rotation.y = rotation
+
+        let mixer = new THREE.AnimationMixer(obj.scene);
+        mixer.clipAction(obj.animations[0]).play();
+        vm.animationMixers.push(mixer);
+
+        vm.scene.add(obj.scene);
+
+      }, undefined, function (error) {
+        console.error(error);
+      });
     },
 
     animate() {
