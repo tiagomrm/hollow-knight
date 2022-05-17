@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import * as KNIGHT from '../../assets/js/knight.js';
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+import Stats from "three/examples/jsm/libs/stats.module";
 
 export default {
   name: 'Canvas',
@@ -115,7 +116,8 @@ export default {
             scene: gltf.scene,
             animations: gltf.animations
           };
-          obj.animations = gltf.animations;
+          obj.animations = gltf.animations
+
 
           // obj.scene.scale.set(2.5, 2.5, 2.5)
           obj.scene.position.x = i * 10;
@@ -154,15 +156,18 @@ export default {
         console.error(error);
       });
 
+      this.stats = new Stats();
+      document.body.appendChild( this.stats.dom );
+
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
     },
 
     createRandomFirefly() {
       const trignometricFuncts = [Math.cos, Math.sin]
-      const sphere = new THREE.SphereGeometry( 1, 16, 8 );
+      const sphere = new THREE.SphereGeometry( 1, 6, 6 );
 
-      const particle = new THREE.PointLight( 0x80ff80, 1, 4 );
+      const particle = new THREE.PointLight( 0x80ff80, 1, 3 );
       const sphereMesh =  new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xeaffb9, transparent: true, opacity: 0.8 } ) );
       particle.add(sphereMesh);
       this.scene.add( particle );
@@ -227,6 +232,8 @@ export default {
 
       this.renderAnimation();
       const delta = this.clock.getDelta();
+
+      this.stats.update()
 
       this.animationMixers.forEach(mixer => {
         if (mixer) mixer.update(delta)
