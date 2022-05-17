@@ -134,6 +134,26 @@ export default {
           console.error(error);
         });
       }
+
+
+
+      (new GLTFLoader()).load('/models/ambient/bench.glb', function (gltf) {
+        gltf.scene.traverse(function (node) {
+          node.frustumCulled = false;
+          if (node.isMesh) {
+            node.castShadow = true;
+            node.receiveShadow = true;
+            node.material = new THREE.MeshToonMaterial({color: 0X0d1f34});
+          }
+        });
+
+        gltf.scene.position.x = -30;
+
+        vm.scene.add(gltf.scene)
+      }, undefined, function (error) {
+        console.error(error);
+      });
+
       this.renderer.render(this.scene, this.camera);
       this.$refs.canvas.append(this.renderer.domElement)
     },
