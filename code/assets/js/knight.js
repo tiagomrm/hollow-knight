@@ -5,17 +5,17 @@ import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 const MOVEMENT_SPEED = 0.8;
 
 export let knight = new THREE.Object3D();
-getKnight();
+loadKnight();
 
 
 export function hasLoaded() {
     return knight !== undefined;
 }
 
-export function moveHorizontally(x, z, camera) {
+export function moveHorizontally(cameraQuaternion, x, z) {
 
     // calculate the direction of the knight in relation to the cam
-    let camDirVector = new THREE.Vector3(x, 0, z).applyQuaternion(camera.quaternion);
+    let camDirVector = new THREE.Vector3(x, 0, z).applyQuaternion(cameraQuaternion);
     camDirVector.y = 0;
     camDirVector.normalize();
 
@@ -28,7 +28,7 @@ export function moveHorizontally(x, z, camera) {
 
 }
 
-function getKnight() {
+function loadKnight() {
     (new GLTFLoader()).load('/models/knight.glb', function (gltf) {
         gltf.scene.traverse(function (node) {
             node.frustumCulled = false;
