@@ -9,7 +9,7 @@ export const Ambient = {
     createRandomFirefly: function() {
         const trigonometricFuncts = [Math.cos, Math.sin]
 
-        const sphere = new THREE.SphereGeometry( 1, 6, 6 );
+        const sphere = new THREE.SphereGeometry( 1, 5, 5 );
         const particle = new THREE.PointLight( 0x80ff80, 1, 3 );
         const sphereMesh =  new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xeaffb9, transparent: true, opacity: 0.8 } ) );
         particle.add(sphereMesh);
