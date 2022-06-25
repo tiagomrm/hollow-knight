@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 
 
-const MOVEMENT_SPEED = 0.8;
+const MOVEMENT_SPEED = 30;
 
 export let knight = new THREE.Object3D();
 loadKnight();
@@ -12,7 +12,7 @@ export function hasLoaded() {
     return knight !== undefined;
 }
 
-export function moveHorizontally(cameraQuaternion, x, z) {
+export function moveHorizontally(cameraQuaternion, delta, x, z) {
 
     // calculate the direction of the knight in relation to the cam
     let camDirVector = new THREE.Vector3(x, 0, z).applyQuaternion(cameraQuaternion);
@@ -24,7 +24,7 @@ export function moveHorizontally(cameraQuaternion, x, z) {
     knight.lookAt(camDirVector)
 
     // move in that direction
-    knight.translateZ(MOVEMENT_SPEED);
+    knight.translateZ(delta * MOVEMENT_SPEED);
 
 }
 

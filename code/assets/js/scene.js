@@ -50,11 +50,11 @@ export function init() {
         {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: -100, y:0, z:0}},
         {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: -50,  y:0, z:0}},
         {scale: {x:1.3, y:1.5, z:1.3},  rotation: - Math.PI/6,  position: {x: -40,  y:0, z:-10}},
-        {scale: {x:1, y:1.2, z:1},      rotation: Math.PI,      position: {x: -30,  y:0, z:-20}},
+        {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: -30,  y:0, z:-20}},
         {scale: {x:1.3, y:1.6, z:1.3},  rotation: - Math.PI/6,  position: {x: 70,   y:0, z:0}},
         {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: 105,  y:0, z:20}},
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: 125, y:0, z:10}},
-        {scale: {x:1, y:1.2, z:1},      rotation: Math.PI,      position: {x: 145,  y:0, z:0}},
+        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: 125,  y:0, z:10}},
+        {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: 145,  y:0, z:0}},
     ];
 
     for (const leafyBladeState of leafyPositions)
@@ -112,8 +112,9 @@ export function animate() {
         if (Object.values(keyboardControls).some(isPressed => isPressed)) {
             KNIGHT.moveHorizontally(
                 sceneElements.camera.quaternion,
-                keyboardControls.D + keyboardControls.A * -1,
-                keyboardControls.S + keyboardControls.W * -1
+                delta,
+                keyboardControls.D + keyboardControls.A,
+                keyboardControls.S + keyboardControls.W
             );
         }
     }
@@ -135,10 +136,10 @@ export function onDocumentKeyDown (event) {
             keyboardControls.S = 1;
             break;
         case 65: //a
-            keyboardControls.A = 1;
+            keyboardControls.A = -1;
             break;
         case 87: //w
-            keyboardControls.W = 1;
+            keyboardControls.W = -1;
             break;
     }
 }
