@@ -110,6 +110,24 @@ export const Ambient = {
         return bench;
     },
 
+    createBush() {
+        const bush = new THREE.Object3D();
+        (new GLTFLoader()).load('/models/ambient/bush.glb', function (gltf) {
+            console.log(gltf.scene);
+            gltf.scene.traverse(function (node) {
+                node.frustumCulled = false;
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = false;
+                }
+            });
+            bush.add(gltf.scene)
+        }, undefined, function (error) {
+            console.error(error);
+        });
+        return bush;
+    },
+
 
     createLeafyBlade(position, rotation, scale) {
         let leafyBlade = new THREE.Object3D;
