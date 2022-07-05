@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
 
 
-const MOVEMENT_SPEED = 30;
+const MOVEMENT_SPEED = 40;
 
 export let knight = new THREE.Object3D();
 loadKnight();
