@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
+import {Vector2} from "three";
 
 export const Ambient = {
     fireflyMovement: [],
@@ -111,21 +112,54 @@ export const Ambient = {
     },
 
     createBush() {
-        const bush = new THREE.Object3D();
-        (new GLTFLoader()).load('/models/ambient/bush.glb', function (gltf) {
-            console.log(gltf.scene);
-            gltf.scene.traverse(function (node) {
-                node.frustumCulled = false;
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = false;
-                }
+        function init() {
+            const texture = new THREE.TextureLoader().load( "textures/ambient/bush/cut-leaves.png");
+            texture.rotation = Math.PI / 2;
+            texture.center = new Vector2(0.5, 0.5);
+
+            const bumpMap = new THREE.TextureLoader().load( "textures/ambient/bush/cut-leaves-bump.png" );
+            bumpMap.rotation = Math.PI / 2;
+            bumpMap.center = new Vector2(0.5, 0.5);
+
+            self.planeGeometry = new THREE.PlaneBufferGeometry( 30, 30 );
+            self.planeMaterial = new THREE.MeshToonMaterial({
+                map: texture,
+                bumpMap: bumpMap,
+                side: THREE.DoubleSide,
+                transparent: false,
+                alphaTest: 0.5
             });
-            bush.add(gltf.scene)
-        }, undefined, function (error) {
-            console.error(error);
-        });
-        return bush;
+
+            self.planeGeometry.attributes.position.array[2] = 2;
+            self.planeGeometry.attributes.position.array[11] = 2;
+
+            self.planeGeometry.rotateZ(- Math.PI / 4);
+            self.planeGeometry.translate(0, 15, 0);
+
+        }
+
+        function createFoliage(quantity=80, destination=new THREE.Object3D()) {
+            const foliageGeometry = self.planeGeometry.clone();
+
+            foliageGeometry.translate(0, 0, -3);
+            foliageGeometry.rotateX( Math.random() * Math.PI / 2 - Math.PI / 3 );
+            foliageGeometry.rotateY( Math.random() * Math.PI * 2);
+
+            const leaves = new THREE.Mesh( foliageGeometry, self.planeMaterial );
+            leaves.castShadow = true;
+            leaves.receiveShadow = true;
+
+            destination.add(leaves);
+
+            if (--quantity > 0)
+                return createFoliage(quantity, destination);
+
+            return destination;
+        }
+
+        const self = this;
+        init();
+        return createFoliage();
     },
 
 

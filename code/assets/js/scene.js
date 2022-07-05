@@ -2,8 +2,7 @@ import * as THREE from 'three'
 import { Helper } from "./helper.js";
 import { Ambient } from "./ambient.js";
 import * as KNIGHT from "./knight.js";
-import {DDSLoader} from "three/examples/jsm/loaders/DDSLoader";
-import {TextureLoader} from "three";
+import {MeshToonMaterial, TextureLoader, Vector2} from "three";
 
 const sceneElements = {
     camera : null,
@@ -31,6 +30,7 @@ export function init() {
     const material = new THREE.MeshToonMaterial( { color: 0x999999 } );
     const circle = new THREE.Mesh( geometry, material );
     circle.rotation.x = - Math.PI/2;
+    circle.receiveShadow = true;
     sceneElements.sceneGraph.add( circle );
 
     // ILLUMINATION
@@ -91,21 +91,11 @@ export function init() {
     // BENCH
     sceneElements.sceneGraph.add(Ambient.createBench());
 
-    const sphereGeometry = new THREE.SphereGeometry(
-        15,
-        32,
-        16,
-        undefined,
-        undefined,
-        undefined,
-        Math.PI / 2
-    );
-
     // BUSH
     const bush = Ambient.createBush();
+    bush.translateZ(-40);
 
-    bush.position.z = -60;
-    sceneElements.sceneGraph.add(bush);
+    sceneElements.sceneGraph.add( bush );
 
 
     render();
