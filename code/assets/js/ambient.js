@@ -91,7 +91,36 @@ export const Ambient = {
     },
 
     createLampPost: function () {
+        const lampPostPoints = [
+            new THREE.Vector2(0,0),
+            new THREE.Vector2(8,0),
+            new THREE.Vector2(5,5.4),
+            new THREE.Vector2(5,6),
+            new THREE.Vector2(3,16),
+            new THREE.Vector2(3,23),
+            new THREE.Vector2(4,23.76),
+            new THREE.Vector2(4,27),
+            new THREE.Vector2(3,28),
+            new THREE.Vector2(2,38),
+            new THREE.Vector2(2,78),
+            new THREE.Vector2(3,80),
+            new THREE.Vector2(2,82),
+            new THREE.Vector2(4,94.85),
+            new THREE.Vector2(4,102),
+            new THREE.Vector2(2,109),
+            new THREE.Vector2(3,110),
+            new THREE.Vector2(3,113),
+            new THREE.Vector2(2,114),
+            new THREE.Vector2(4,118.25),
+            new THREE.Vector2(0,117),
+        ]
+
         const lampPost = new THREE.Object3D();
+
+        const postGeometry = new THREE.LatheGeometry( lampPostPoints );
+        const postMaterial = new THREE.MeshPhongMaterial( { color: 0x4c7377 } );
+        const post = new THREE.Mesh( postGeometry, postMaterial );
+        lampPost.add( post );
 
         lampPost.name = "LampPost";
 
@@ -114,7 +143,8 @@ export const Ambient = {
 
         const scale = 0.55;
         smallGlobe.scale.set( scale, scale, scale );
-        smallGlobe.translateY( 25 );
+        bigGlobe.translateY( 132 );
+        smallGlobe.translateY( 157 );
 
         smallGlobe.name = "SmallFireflyGlobe";
         bigGlobe.name = "BigFireflyGlobe";
@@ -123,7 +153,7 @@ export const Ambient = {
         lampPost.add( bigGlobe );
         lampPost.add( smallGlobe );
 
-        lampPost.position.set(-60, 80, -50);
+        lampPost.position.set(-60, 0, -50);
 
         return lampPost;
     },
@@ -141,7 +171,7 @@ export const Ambient = {
         fireflyBodyGeometry.rotateX( Math.PI / 3 );
         const fireflyBody = new THREE.Mesh( fireflyBodyGeometry, fireflyMaterial );
 
-        const fireflyLight = new THREE.PointLight(0xffffff, 0.5, 130, 2);
+        const fireflyLight = new THREE.PointLight(0xffffff, 0.5, 150, 2);
         fireflyLight.castShadow = true;
         fireflyLight.shadow.bias = 0.0000125;
         fireflyLight.shadow.mapSize.width = 2048;
