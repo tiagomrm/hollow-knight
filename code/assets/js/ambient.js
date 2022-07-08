@@ -1,18 +1,202 @@
 import * as THREE from "three";
 import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader";
-import {Vector2} from "three";
+import {DoubleSide, Vector2} from "three";
 
 export const Ambient = {
     fireflyMovement: [],
 
     animationMixers: [],
 
-    createRandomFirefly: function() {
+    ambient: new THREE.Object3D(),
+
+    createAmbient: function() {
+        // const backgroundGeometry = new THREE.SphereGeometry( 100, 16, 16 );
+        // const backgroundMaterial = new THREE.MeshBasicMaterial( { color: 0x00000, side: DoubleSide } );
+        // const sphere = new THREE.Mesh( backgroundGeometry, backgroundMaterial );
+        // this.ambient.add( sphere );
+
+
+
+        // CIRCLE PLANE
+        const groundGeometry = new THREE.CircleGeometry( 350, 16 );
+        const groundMaterial = new THREE.MeshToonMaterial( { color: 0x999999 } );
+        const circle = new THREE.Mesh( groundGeometry, groundMaterial );
+        circle.rotation.x = - Math.PI/2;
+        circle.receiveShadow = true;
+        this.ambient.add( circle );
+
+        // ILLUMINATION
+        // const hemiLight = new THREE.HemisphereLight(0xa1f2db, 0x3f7675, 0.4);
+        // hemiLight.position.set(0, 80, 0)
+        // this.ambient.add( hemiLight );
+
+        const pointBlueLight = new THREE.PointLight( 0x3fa6c1, 2, 200, 4 );
+        pointBlueLight.position.set(0, 50, 0)
+        this.ambient.add( pointBlueLight );
+
+        let spotLight = new THREE.SpotLight(0xffffff, 2, 220, 0.5, 1,1);
+        spotLight.position.set(0, 200, 50);
+        spotLight.castShadow = true;
+        this.ambient.add( spotLight );
+
+
+        const leafyPositions = [
+            {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: -100, y:0, z:0}},
+            {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: -50,  y:0, z:0}},
+            {scale: {x:1.3, y:1.5, z:1.3},  rotation: - Math.PI/6,  position: {x: -40,  y:0, z:-10}},
+            {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: -30,  y:0, z:-20}},
+            {scale: {x:1.3, y:1.6, z:1.3},  rotation: - Math.PI/6,  position: {x: 70,   y:0, z:0}},
+            {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: 105,  y:0, z:20}},
+            {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: 125,  y:0, z:10}},
+            {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: 145,  y:0, z:0}},
+        ];
+
+        for (const leafyBladeState of leafyPositions)
+            this.ambient.add(
+                Ambient.createLeafyBlade(leafyBladeState.position, leafyBladeState.rotation, leafyBladeState.scale)
+            );
+
+        // FLYING PARTICLES
+        const randomParticles = new THREE.Object3D();
+        for (let i = 0; i<= 30; i++) {
+            randomParticles.add(Ambient.createRandomFlyingParticle());
+        }
+        this.ambient.add(randomParticles);
+
+        // PILLARS
+        const pillar = Ambient.createPillar(0x183944);
+        pillar.castShadow = true;
+        pillar.position.x = 70
+        pillar.position.z = 60
+        this.ambient.add( pillar );
+
+        const clone = pillar.clone(true);
+        clone.position.x = -70;
+        clone.position.z = 0;
+        this.ambient.add( clone );
+
+        // BENCH
+        this.ambient.add(Ambient.createBench());
+
+        // BUSH
+        const bush = Ambient.createBush();
+        bush.translateZ(-40);
+
+        this.ambient.add( bush );
+
+        // LAMPPOST
+        this.ambient.add( this.createLampPost() );
+
+        return this.ambient;
+    },
+
+    createLampPost: function () {
+        const lampPost = new THREE.Object3D();
+
+        lampPost.name = "LampPost";
+
+        const glassMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.1,
+            shininess: 100,
+            side: DoubleSide
+        });
+
+        const bigGlobeGeometry = new THREE.SphereGeometry( 15, 16, 16 );
+        const bigGlobe = new THREE.Mesh( bigGlobeGeometry, glassMaterial );
+
+        const firefly = this.createFirefly();
+
+        bigGlobe.add( firefly );
+
+        const smallGlobe = bigGlobe.clone( true );
+
+        const scale = 0.55;
+        smallGlobe.scale.set( scale, scale, scale );
+        smallGlobe.translateY( 25 );
+
+        smallGlobe.name = "SmallFireflyGlobe";
+        bigGlobe.name = "BigFireflyGlobe";
+
+
+        lampPost.add( bigGlobe );
+        lampPost.add( smallGlobe );
+
+        lampPost.position.set(-60, 80, -50);
+
+        return lampPost;
+    },
+
+    createFirefly: function () {
+        const firefly = new THREE.Object3D();
+        firefly.name = "Firefly";
+
+        const fireflyMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: DoubleSide
+        });
+
+        const fireflyBodyGeometry = new THREE.CapsuleGeometry( 1.2, 1, 3, 6 );
+        fireflyBodyGeometry.rotateX( Math.PI / 3 );
+        const fireflyBody = new THREE.Mesh( fireflyBodyGeometry, fireflyMaterial );
+
+        const fireflyLight = new THREE.PointLight(0xffffff, 0.5, 130, 2);
+        fireflyLight.castShadow = true;
+        fireflyLight.shadow.bias = 0.0000125;
+        fireflyLight.shadow.mapSize.width = 2048;
+        fireflyLight.shadow.mapSize.height = 2048;
+        fireflyLight.name = "Light";
+
+        fireflyBody.add(fireflyLight);
+
+        fireflyBody.translateY( 0.5 );
+
+        firefly.add(fireflyBody);
+
+        const points = [];
+        for ( let i = 0; i < 5; i ++ ) {
+            points.push( new THREE.Vector2( Math.sin( i * 0.4 ) * 10 + 5, ( i - 2 ) * 2 ) );
+        }
+
+        const fireflyLeftWingGeometry = new THREE.LatheGeometry( points, 5, 0, 2 );
+        fireflyLeftWingGeometry.rotateY( Math.PI / 8 );
+        fireflyLeftWingGeometry.rotateZ( 3 * Math.PI / 4 );
+        fireflyLeftWingGeometry.scale( 0.4,0.15,0.1 );
+
+        const fireflyRightWingGeometry = fireflyLeftWingGeometry.clone();
+
+        fireflyRightWingGeometry.scale(-1, 1, 1);
+
+        const fireflyLeftWing = new THREE.Mesh( fireflyLeftWingGeometry, fireflyMaterial );
+        const fireflyRightWing = new THREE.Mesh( fireflyRightWingGeometry, fireflyMaterial );
+
+        fireflyLeftWing.name = "LeftWing";
+        fireflyRightWing.name = "RightWing";
+
+        const fireflyWings = new THREE.Object3D();
+
+        fireflyWings.add(fireflyLeftWing);
+        fireflyWings.add(fireflyRightWing);
+
+        fireflyWings.rotation.y = Math.PI;
+        fireflyWings.rotation.x = - Math.PI / 5;
+
+        firefly.add(fireflyWings);
+
+        return firefly;
+    },
+
+    createRandomFlyingParticle: function() {
         const trigonometricFuncts = [Math.cos, Math.sin]
 
         const sphere = new THREE.SphereGeometry( 1, 5, 5 );
         const particle = new THREE.PointLight( 0x80ff80, 1, 3 );
-        const sphereMesh =  new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xeaffb9, transparent: true, opacity: 0.8 } ) );
+        const sphereMesh =  new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( {
+            color: 0xeaffb9,
+            transparent: true,
+            opacity: 0.8
+        } ) );
         particle.add(sphereMesh);
 
         const alphaX = Math.random() * 0.6 + 0.1
@@ -41,23 +225,6 @@ export const Ambient = {
         });
 
         return particle;
-    },
-
-    updateAnimationFrame(delta) {
-        this.updateAnimationMixers(delta);
-
-        const time = Date.now() * 0.0005;
-        this.updateFirefliesPositioningForClockDelta(time)
-    },
-
-    updateFirefliesPositioningForClockDelta: function (delta) {
-        for (const firefly of this.fireflyMovement) {
-            firefly.object.position.set(
-                firefly.movement.x(delta),
-                firefly.movement.y(delta),
-                firefly.movement.z(delta),
-            )
-        }
     },
 
     createPillar(color) {
@@ -127,8 +294,14 @@ export const Ambient = {
                 bumpMap: bumpMap,
                 side: THREE.DoubleSide,
                 transparent: false,
-                alphaTest: 0.5
+                alphaTest: 0.1
             });
+
+            self.foaliageDepthMaterial = new THREE.MeshDepthMaterial( {
+                depthPacking: THREE.RGBADepthPacking,
+                map: texture,
+                alphaTest : 0.1
+            } );
 
             self.planeGeometry.attributes.position.array[2] = 2;
             self.planeGeometry.attributes.position.array[11] = 2;
@@ -148,6 +321,9 @@ export const Ambient = {
             const leaves = new THREE.Mesh( foliageGeometry, self.planeMaterial );
             leaves.castShadow = true;
             leaves.receiveShadow = true;
+
+            // correct shadows to exclude transparent texels
+            leaves.customDepthMaterial = self.foaliageDepthMaterial;
 
             destination.add(leaves);
 
@@ -188,9 +364,71 @@ export const Ambient = {
         return leafyBlade;
     },
 
+    updateAnimationFrame(delta) {
+        this.updateAnimationMixers(delta);
+        const time = Date.now() * 0.0005;
+        this.updateFirefliesPositioningForClockDelta(time)
+        this.updatePostLampForClockDelta(time);
+        this.updatePostLampForClockDelta(delta);
+    },
+
+    updateFirefliesPositioningForClockDelta: function (delta) {
+        for (const firefly of this.fireflyMovement) {
+            firefly.object.position.set(
+                firefly.movement.x(delta),
+                firefly.movement.y(delta),
+                firefly.movement.z(delta),
+            )
+        }
+    },
+
     updateAnimationMixers(delta) {
         this.animationMixers.forEach(mixer => {
             if (mixer) mixer.update(delta)
         });
+    },
+
+    updatePostLampForClockDelta() {
+        function updateFireflyFlightState(firefly, phase=0) {
+            const wingRotation = (a, p) => Math.sin(a + p) * 3 * Math.PI/16 - Math.PI/16;
+
+            const alpha = Date.now() * 0.025;
+
+            const angle = wingRotation(alpha, phase);
+
+            const leftWing = firefly.getObjectByName("LeftWing");
+            leftWing.rotation.z = - angle;
+
+            const rightWing = firefly.getObjectByName("RightWing");
+            rightWing.rotation.z = angle;
+
+            firefly.position.y = - Math.sin(alpha + phase) * 0.05;
+        }
+
+        function updateFireflyPosition(firefly, maxDistance, phase=0) {
+            const alpha = Date.now() * 0.007;
+
+            firefly.position.x = Math.sin(alpha + phase) * maxDistance;
+            firefly.position.y = Math.cos(alpha + phase) * maxDistance;
+            firefly.position.z = Math.cos(alpha + phase + Math.PI/3) * maxDistance;
+        }
+
+
+        const fireflyGlobes = [
+            this.ambient.getObjectByName("BigFireflyGlobe"),
+            this.ambient.getObjectByName("SmallFireflyGlobe")
+        ]
+
+        fireflyGlobes.forEach( (globe, index) => {
+            const firefly = globe.getObjectByName("Firefly");
+            const maxFlyingDistance = globe.geometry.parameters.radius / 4;
+
+            const phase = index * Math.PI;
+
+            updateFireflyFlightState(firefly, phase );
+            updateFireflyPosition(firefly, maxFlyingDistance, phase);
+        })
+
+
     }
 }

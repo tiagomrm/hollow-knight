@@ -1,5 +1,5 @@
 {
-  "name": "code",
+  "name": "hollowknight",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
@@ -7,6 +7,7 @@
     "preview": "vite preview --port 5050"
   },
   "dependencies": {
+    "postprocessing": "^6.28.1",
     "three": "^0.140.2",
     "vue": "^3.2.33"
   },
