@@ -21,7 +21,7 @@ export function moveHorizontally(cameraQuaternion, delta, x, z) {
 
     camDirVector.add(knight.position);
 
-    knight.lookAt(camDirVector)
+    knight.lookAt(camDirVector);
 
     // move in that direction
     knight.translateZ(delta * MOVEMENT_SPEED);

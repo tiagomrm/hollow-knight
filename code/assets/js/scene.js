@@ -1,8 +1,7 @@
-import * as THREE from 'three'
+import * as THREE from 'three';
 import { Helper } from "./helper.js";
 import { Ambient } from "./ambient.js";
 import * as KNIGHT from "./knight.js";
-import {MeshToonMaterial, TextureLoader, Vector2} from "three";
 
 const sceneElements = {
     camera : null,
@@ -10,8 +9,20 @@ const sceneElements = {
     clock : null,
     renderer : null,
     controls: null,
-    stats: null
-};
+    stats: null,
+    composer: null,
+    postprocessing: {
+        godRays : {
+            properties: {
+                sunPosition: new THREE.Vector3( 500, 1000, 0 ),
+                clipPosition:  new THREE.Vector4(),
+                screenSpacePosition: new THREE.Vector3(),
+                materialDepth: new THREE.MeshDepthMaterial()
+            }
+        },
+        enabled: true
+    }
+}
 
 const keyboardControls = {
     W: 0,
@@ -23,117 +34,187 @@ const keyboardControls = {
 export function init() {
 
     Helper.init(sceneElements);
-    resizeToWindowSize();
-
-    // CIRCLE PLANE
-    const geometry = new THREE.CircleGeometry( 350, 16 );
-    const material = new THREE.MeshToonMaterial( { color: 0x999999 } );
-    const circle = new THREE.Mesh( geometry, material );
-    circle.rotation.x = - Math.PI/2;
-    circle.receiveShadow = true;
-    sceneElements.sceneGraph.add( circle );
-
-    // ILLUMINATION
-    const hemiLight = new THREE.HemisphereLight(0xa1f2db, 0x3f7675, 0.4);
-    hemiLight.position.set(0, 80, 0)
-    sceneElements.sceneGraph.add( hemiLight );
-
-    const pointBlueLight = new THREE.PointLight( 0x3fa6c1, 2, 200, 4 );
-    pointBlueLight.position.set(0, 50, 0)
-    sceneElements.sceneGraph.add( pointBlueLight );
-
-    let spotLight = new THREE.SpotLight(0xffffff, 2, 220, 0.5, 1,1);
-    spotLight.position.set(0, 200, 50);
-    spotLight.castShadow = true;
-    sceneElements.sceneGraph.add( spotLight );
-
-
-    const leafyPositions = [
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: -100, y:0, z:0}},
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: -50,  y:0, z:0}},
-        {scale: {x:1.3, y:1.5, z:1.3},  rotation: - Math.PI/6,  position: {x: -40,  y:0, z:-10}},
-        {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: -30,  y:0, z:-20}},
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: - Math.PI/6,  position: {x: 70,   y:0, z:0}},
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: Math.PI,      position: {x: 105,  y:0, z:20}},
-        {scale: {x:1.3, y:1.6, z:1.3},  rotation: 0,            position: {x: 125,  y:0, z:10}},
-        {scale: {x:1,   y:1.2, z:1},    rotation: Math.PI,      position: {x: 145,  y:0, z:0}},
-    ];
-
-    for (const leafyBladeState of leafyPositions)
-        sceneElements.sceneGraph.add(
-            Ambient.createLeafyBlade(leafyBladeState.position, leafyBladeState.rotation, leafyBladeState.scale)
-        );
-
-    // FLYING PARTICLES
-    const randomParticles = new THREE.Object3D();
-    for (let i = 0; i<= 30; i++) {
-        randomParticles.add(Ambient.createRandomFirefly());
-    }
-    sceneElements.sceneGraph.add(randomParticles);
-
-
-    // PILLARS
-    const pillar = Ambient.createPillar(0x183944);
-    pillar.castShadow = true;
-    pillar.position.x = 70
-    pillar.position.z = 60
-    sceneElements.sceneGraph.add( pillar );
-
-    const clone = pillar.clone(true);
-    clone.position.x = -70;
-    clone.position.z = 0;
-    sceneElements.sceneGraph.add( clone );
 
     // KNIGHT
     KNIGHT.knight.position.z = 20;
-    sceneElements.sceneGraph.add(KNIGHT.knight)
+    sceneElements.sceneGraph.add(KNIGHT.knight);
 
-    // BENCH
-    sceneElements.sceneGraph.add(Ambient.createBench());
+    // AMBIENT
+    sceneElements.sceneGraph.add(Ambient.createAmbient());
 
-    // BUSH
-    const bush = Ambient.createBush();
-    bush.translateZ(-40);
+    // POSTPROCESSING
+    Helper.initPostprocessing(sceneElements, window.innerWidth, window.innerHeight);
+    Helper.resizeToWindowSize(sceneElements);
 
-    sceneElements.sceneGraph.add( bush );
-
-
-    render();
+    this.animate();
 }
 
 export function render () {
-    sceneElements.renderer.render(sceneElements.sceneGraph, sceneElements.camera);
-    document.getElementById("canvas").append(sceneElements.renderer.domElement);
-}
 
-export function animate() {
-    sceneElements.renderer.render(sceneElements.sceneGraph, sceneElements.camera);
-    requestAnimationFrame(animate);
+    if ( sceneElements.postprocessing.enabled ) {
 
-    const delta = sceneElements.clock.getDelta();
+        const postprocessing = sceneElements.postprocessing;
 
-    sceneElements.stats.update();
+        const sunPosition = sceneElements.postprocessing.godRays.properties.sunPosition;
+        const clipPosition = sceneElements.postprocessing.godRays.properties.clipPosition;
+        const screenSpacePosition = sceneElements.postprocessing.godRays.properties.screenSpacePosition;
 
-    Ambient.updateAnimationFrame(delta);
+        clipPosition.x = sunPosition.x;
+        clipPosition.y = sunPosition.y;
+        clipPosition.z = sunPosition.z;
+        clipPosition.w = 1;
 
-    if (KNIGHT.hasLoaded()) {
-        // if any key is being pressed
-        if (Object.values(keyboardControls).some(isPressed => isPressed)) {
-            KNIGHT.moveHorizontally(
-                sceneElements.camera.quaternion,
-                delta,
-                keyboardControls.D + keyboardControls.A,
-                keyboardControls.S + keyboardControls.W
-            );
-        }
+        clipPosition.applyMatrix4( sceneElements.camera.matrixWorldInverse ).applyMatrix4( sceneElements.camera.projectionMatrix );
+
+        // perspective divide (produce NDC space)
+
+        clipPosition.x /= clipPosition.w;
+        clipPosition.y /= clipPosition.w;
+
+        screenSpacePosition.x = ( clipPosition.x + 1 ) / 2; // transform from [-1,1] to [0,1]
+        screenSpacePosition.y = ( clipPosition.y + 1 ) / 2; // transform from [-1,1] to [0,1]
+        screenSpacePosition.z = clipPosition.z; // needs to stay in clip space for visibilty checks
+
+        // Give it to the god-ray and sun shaders
+
+        postprocessing.godrayGenUniforms[ 'vSunPositionScreenSpace' ].value.copy( screenSpacePosition );
+        postprocessing.godraysFakeSunUniforms[ 'vSunPositionScreenSpace' ].value.copy( screenSpacePosition );
+
+        // -- Draw sky and sun --
+
+        // Clear colors and depths, will clear to sky color
+
+        sceneElements.renderer.setRenderTarget( postprocessing.rtTextureColors );
+        sceneElements.renderer.clear( true, true, false );
+
+        // Sun render. Runs a shader that gives a brightness based on the screen
+        // space distance to the sun. Not very efficient, so i make a scissor
+        // rectangle around the suns position to avoid rendering surrounding pixels.
+
+        const sunsqH = 0.74 * window.innerHeight; // 0.74 depends on extent of sun from shader
+        const sunsqW = 0.74 * window.innerHeight; // both depend on height because sun is aspect-corrected
+
+        screenSpacePosition.x *= window.innerWidth;
+        screenSpacePosition.y *= window.innerHeight;
+
+        sceneElements.renderer.setScissor( screenSpacePosition.x - sunsqW / 2, screenSpacePosition.y - sunsqH / 2, sunsqW, sunsqH );
+        sceneElements.renderer.setScissorTest( true );
+
+        postprocessing.godraysFakeSunUniforms[ 'fAspect' ].value = window.innerWidth / window.innerHeight;
+
+        postprocessing.scene.overrideMaterial = postprocessing.materialGodraysFakeSun;
+        sceneElements.renderer.setRenderTarget( postprocessing.rtTextureColors );
+        sceneElements.renderer.render( postprocessing.scene, postprocessing.camera );
+
+        sceneElements.renderer.setScissorTest( false );
+
+        // -- Draw scene objects --
+
+        // Colors
+
+        sceneElements.sceneGraph.overrideMaterial = null;
+        sceneElements.renderer.setRenderTarget( postprocessing.rtTextureColors );
+        sceneElements.renderer.render( sceneElements.sceneGraph, sceneElements.camera );
+
+        // Depth
+
+        sceneElements.sceneGraph.overrideMaterial = sceneElements.postprocessing.godRays.properties.materialDepth;
+        sceneElements.renderer.setRenderTarget( postprocessing.rtTextureDepth );
+        sceneElements.renderer.clear();
+        sceneElements.renderer.render( sceneElements.sceneGraph, sceneElements.camera );
+
+        //
+
+        postprocessing.godrayMaskUniforms[ 'tInput' ].value = postprocessing.rtTextureDepth.texture;
+
+        postprocessing.scene.overrideMaterial = postprocessing.materialGodraysDepthMask;
+        sceneElements.renderer.setRenderTarget( postprocessing.rtTextureDepthMask );
+        sceneElements.renderer.render( postprocessing.scene, postprocessing.camera );
+
+        // -- Render god-rays --
+
+        // Maximum length of god-rays (in texture space [0,1]X[0,1])
+
+        const filterLen = 1.0;
+
+        // Samples taken by filter
+
+        const TAPS_PER_PASS = 4.0;
+
+        // Pass order could equivalently be 3,2,1 (instead of 1,2,3), which
+        // would start with a small filter support and grow to large. however
+        // the large-to-small order produces less objectionable aliasing artifacts that
+        // appear as a glimmer along the length of the beams
+
+        // pass 1 - render into first ping-pong target
+        filterGodRays( postprocessing.rtTextureDepthMask.texture, postprocessing.rtTextureGodRays2, getStepSize( filterLen, TAPS_PER_PASS, 1.0 ) );
+
+        // pass 2 - render into second ping-pong target
+        filterGodRays( postprocessing.rtTextureGodRays2.texture, postprocessing.rtTextureGodRays1, getStepSize( filterLen, TAPS_PER_PASS, 2.0 ) );
+
+        // pass 3 - 1st RT
+        filterGodRays( postprocessing.rtTextureGodRays1.texture, postprocessing.rtTextureGodRays2, getStepSize( filterLen, TAPS_PER_PASS, 3.0 ) );
+
+        // final pass - composite god-rays onto colors
+
+        postprocessing.godrayCombineUniforms[ 'tColors' ].value = postprocessing.rtTextureColors.texture;
+        postprocessing.godrayCombineUniforms[ 'tGodRays' ].value = postprocessing.rtTextureGodRays2.texture;
+
+        postprocessing.scene.overrideMaterial = postprocessing.materialGodraysCombine;
+
+        sceneElements.renderer.setRenderTarget( null );
+        sceneElements.renderer.render( postprocessing.scene, postprocessing.camera );
+        postprocessing.scene.overrideMaterial = null;
+
+    } else {
+
+        sceneElements.renderer.setRenderTarget( null );
+        sceneElements.renderer.clear();
+        sceneElements.renderer.render( sceneElements.sceneGraph, sceneElements.camera );
+
     }
 }
 
-export function resizeToWindowSize() {
-    sceneElements.camera.aspect = window.innerWidth / window.innerHeight;
-    sceneElements.camera.updateProjectionMatrix();
+function getStepSize( filterLen, tapsPerPass, pass ) {
 
-    sceneElements.renderer.setSize(window.innerWidth, window.innerHeight);
+    return filterLen * Math.pow( tapsPerPass, - pass );
+
+}
+
+function filterGodRays( inputTex, renderTarget, stepSize ) {
+
+    sceneElements.postprocessing.scene.overrideMaterial = sceneElements.postprocessing.materialGodraysGenerate;
+
+    sceneElements.postprocessing.godrayGenUniforms[ 'fStepSize' ].value = stepSize;
+    sceneElements.postprocessing.godrayGenUniforms[ 'tInput' ].value = inputTex;
+
+    sceneElements.renderer.setRenderTarget( renderTarget );
+    sceneElements.renderer.render( sceneElements.postprocessing.scene, sceneElements.postprocessing.camera );
+    sceneElements.postprocessing.scene.overrideMaterial = null;
+
+}
+
+export function animate() {
+    requestAnimationFrame(this.animate.bind(this));
+
+    sceneElements.stats.begin();
+
+    const delta = sceneElements.clock.getDelta();
+
+    Ambient.updateAnimationFrame(delta);
+
+    if (KNIGHT.hasLoaded() && Object.values(keyboardControls).some(isPressed => isPressed)) {
+        KNIGHT.moveHorizontally(
+            sceneElements.camera.quaternion,
+            delta,
+            keyboardControls.D + keyboardControls.A,
+            keyboardControls.S + keyboardControls.W
+        );
+    }
+
+    this.render();
+
+    sceneElements.stats.end();
 }
 
 export function onDocumentKeyDown (event) {
