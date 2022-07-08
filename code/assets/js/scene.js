@@ -46,7 +46,7 @@ export function init() {
     Helper.initPostprocessing(sceneElements, window.innerWidth, window.innerHeight);
     Helper.resizeToWindowSize(sceneElements);
 
-    this.animate();
+    animate();
 }
 
 export function render () {
@@ -195,7 +195,7 @@ function filterGodRays( inputTex, renderTarget, stepSize ) {
 }
 
 export function animate() {
-    requestAnimationFrame(animate.bind(this));
+    requestAnimationFrame(animate);
 
     sceneElements.stats.begin();
 
@@ -212,7 +212,7 @@ export function animate() {
         );
     }
 
-    this.render();
+    render();
 
     sceneElements.stats.end();
 }
