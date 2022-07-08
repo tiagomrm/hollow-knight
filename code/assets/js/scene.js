@@ -195,7 +195,7 @@ function filterGodRays( inputTex, renderTarget, stepSize ) {
 }
 
 export function animate() {
-    requestAnimationFrame(this.animate.bind(this));
+    requestAnimationFrame(animate.bind(this));
 
     sceneElements.stats.begin();
 
